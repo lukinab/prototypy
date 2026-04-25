@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Prototyp: Klasický převod</title>
+<title>Převod test</title>
 
 <!-- Google Analytics 4 -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXX"></script>
@@ -372,8 +372,8 @@
 </head>
 <body>
 
-<h1 class="proto-title">Prototyp: Klasický převod</h1>
-<p class="subtitle">Cesta uživatele z homescreeny při zadávání nové platby. Mobilní zobrazení, navigace přes hash routing s historií prohlížeče. Pro měření připravené dataLayer eventy (GA4) a Clarity tagy.</p>
+<h1 class="proto-title">Převod test</h1>
+<p class="subtitle">Celá cesta klasického převodu: úvodní obrazovka → 1. krok → 2. krok → souhrn → autorizace → result. Mobilní zobrazení, navigace přes hash routing s historií prohlížeče. Pro měření připravené dataLayer eventy (GA4) a Clarity tagy.</p>
 
 <div class="stage" id="stage">
 
@@ -700,14 +700,14 @@ function trackPage(screenId) {
       page_title: pageTitle,
       page_location: window.location.origin + window.location.pathname + '#' + screenId,
       page_path: pagePath,
-      prototype: 'klasicky_prevod'
+      prototype: 'prevod_test'
     });
   }
 
   // Clarity custom tags
   if (typeof clarity === 'function') {
     clarity('set', 'screen', pageName);
-    clarity('set', 'prototype', 'klasicky_prevod');
+    clarity('set', 'prototype', 'prevod_test');
     clarity('event', 'page_view_' + pageName);
   }
 
@@ -717,7 +717,7 @@ function trackPage(screenId) {
 
 function trackEvent(name, params) {
   if (typeof gtag === 'function') {
-    gtag('event', name, Object.assign({ prototype: 'klasicky_prevod' }, params || {}));
+    gtag('event', name, Object.assign({ prototype: 'prevod_test' }, params || {}));
   }
   if (typeof clarity === 'function') {
     clarity('event', name);
