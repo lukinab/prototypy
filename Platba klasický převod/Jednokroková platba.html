@@ -67,10 +67,16 @@ h1.proto-title {
 }
 
 /* ====== PHONE SHELL ====== */
-.stage {
+/* stage-wrap je relativní kontejner bez overflow:hidden → sheet animace je viditelná */
+.stage-wrap {
   position: relative;
   width: 390px;
   height: 800px;
+  flex-shrink: 0;
+}
+.stage {
+  position: absolute;
+  inset: 0;
   background: var(--bg);
   border-radius: 40px;
   overflow: hidden;
@@ -946,9 +952,11 @@ input:checked + .switch-track::after { transform: translateX(18px); }
   .hint {
     display: none;
   }
-  .stage {
+  .stage-wrap {
     width: 100vw;
     height: 100dvh;
+  }
+  .stage {
     border-radius: 0;
     border: none;
     box-shadow: none;
@@ -964,6 +972,7 @@ input:checked + .switch-track::after { transform: translateX(18px); }
 <!-- ================================================================
      PHONE SHELL
      ================================================================ -->
+<div class="stage-wrap">
 <div class="stage">
 
   <!-- ======================== ÚVODNÍ OBRAZOVKA (HOME) ======================== -->
@@ -1422,15 +1431,17 @@ input:checked + .switch-track::after { transform: translateX(18px); }
 
   </section><!-- /screen-success -->
 
-  <!-- CURRENCY BOTTOM SHEET (uvnitř stage = omezeno na šířku telefonu) -->
-  <div class="cur-sheet-overlay" id="cur-overlay"></div>
-  <div class="cur-sheet" id="cur-sheet" role="dialog" aria-label="Výběr měny">
-    <div class="cur-sheet-handle"></div>
-    <div class="cur-sheet-title">Měna platby</div>
-    <div class="cur-sheet-list" id="cur-list"></div>
-  </div>
-
 </div><!-- /stage -->
+
+<!-- CURRENCY BOTTOM SHEET (vně stage, uvnitř stage-wrap → animace není clipována) -->
+<div class="cur-sheet-overlay" id="cur-overlay"></div>
+<div class="cur-sheet" id="cur-sheet" role="dialog" aria-label="Výběr měny">
+  <div class="cur-sheet-handle"></div>
+  <div class="cur-sheet-title">Měna platby</div>
+  <div class="cur-sheet-list" id="cur-list"></div>
+</div>
+
+</div><!-- /stage-wrap -->
 
 <p class="hint">Prototyp · Jednokrokový platební příkaz · <code>UX Research 2026</code></p>
 
