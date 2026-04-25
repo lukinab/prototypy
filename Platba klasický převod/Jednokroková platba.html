@@ -340,20 +340,20 @@ h1.proto-title {
 
 /* ===== CURRENCY BOTTOM SHEET ===== */
 .cur-sheet-overlay {
-  position: fixed; inset: 0; z-index: 200;
+  position: absolute; inset: 0; z-index: 200;
   background: rgba(0,0,0,0.35);
   opacity: 0; pointer-events: none;
   transition: opacity 0.25s;
 }
 .cur-sheet-overlay.open { opacity: 1; pointer-events: all; }
 .cur-sheet {
-  position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+  position: absolute; bottom: 0; left: 0; right: 0; z-index: 201;
   background: #fff;
   border-radius: 20px 20px 0 0;
   padding: 12px 0 0;
   transform: translateY(100%);
   transition: transform 0.3s cubic-bezier(.32,.72,0,1);
-  max-height: 75vh;
+  max-height: 75%;
   display: flex; flex-direction: column;
 }
 .cur-sheet.open { transform: translateY(0); }
@@ -1422,6 +1422,14 @@ input:checked + .switch-track::after { transform: translateX(18px); }
 
   </section><!-- /screen-success -->
 
+  <!-- CURRENCY BOTTOM SHEET (uvnitř stage = omezeno na šířku telefonu) -->
+  <div class="cur-sheet-overlay" id="cur-overlay"></div>
+  <div class="cur-sheet" id="cur-sheet" role="dialog" aria-label="Výběr měny">
+    <div class="cur-sheet-handle"></div>
+    <div class="cur-sheet-title">Měna platby</div>
+    <div class="cur-sheet-list" id="cur-list"></div>
+  </div>
+
 </div><!-- /stage -->
 
 <p class="hint">Prototyp · Jednokrokový platební příkaz · <code>UX Research 2026</code></p>
@@ -2069,13 +2077,6 @@ history.replaceState({ screen: 'screen-home' }, 'Domů', '#home');
 trackPage('platba_jednokrokova_home');
 </script>
 
-<!-- CURRENCY BOTTOM SHEET -->
-<div class="cur-sheet-overlay" id="cur-overlay"></div>
-<div class="cur-sheet" id="cur-sheet" role="dialog" aria-label="Výběr měny">
-  <div class="cur-sheet-handle"></div>
-  <div class="cur-sheet-title">Měna platby</div>
-  <div class="cur-sheet-list" id="cur-list"></div>
-</div>
 
 <script>
 const CURRENCIES = [
