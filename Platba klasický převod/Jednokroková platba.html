@@ -316,28 +316,80 @@ h1.proto-title {
 }
 .amount-input-big::placeholder { color: var(--text-3); }
 
-.currency-toggle {
+.cur-select-btn {
   display: flex;
-  gap: 0;
+  align-items: center;
+  gap: 4px;
   background: var(--bg);
+  border: none;
   border-radius: 20px;
-  padding: 3px;
-  flex-shrink: 0;
-}
-.cur-btn {
-  padding: 5px 10px;
-  border: none; background: transparent;
-  font-size: 13px; font-weight: 600;
-  color: var(--text-2); cursor: pointer;
-  border-radius: 16px;
+  padding: 6px 10px 6px 8px;
+  cursor: pointer;
   font-family: inherit;
-  transition: all 0.15s;
-}
-.cur-btn.active {
-  background: #fff;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--text);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+  flex-shrink: 0;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
+.cur-select-btn:active { background: #e0e0e0; }
+.cur-select-flag { font-size: 16px; line-height: 1; }
+.cur-select-code { font-size: 13px; font-weight: 700; }
+.cur-select-chevron { color: var(--text-3); margin-left: 1px; }
+
+/* ===== CURRENCY BOTTOM SHEET ===== */
+.cur-sheet-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.35);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.25s;
+}
+.cur-sheet-overlay.open { opacity: 1; pointer-events: all; }
+.cur-sheet {
+  position: fixed; bottom: 0; left: 0; right: 0; z-index: 201;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 12px 0 0;
+  transform: translateY(100%);
+  transition: transform 0.3s cubic-bezier(.32,.72,0,1);
+  max-height: 75vh;
+  display: flex; flex-direction: column;
+}
+.cur-sheet.open { transform: translateY(0); }
+.cur-sheet-handle {
+  width: 36px; height: 4px;
+  background: #ddd; border-radius: 2px;
+  margin: 0 auto 12px;
+}
+.cur-sheet-title {
+  font-size: 16px; font-weight: 700;
+  color: var(--text);
+  padding: 0 20px 12px;
+}
+.cur-sheet-list {
+  overflow-y: auto;
+  padding: 0 0 env(safe-area-inset-bottom, 16px);
+  -webkit-overflow-scrolling: touch;
+}
+.cur-item {
+  display: flex; align-items: center; gap: 14px;
+  padding: 13px 20px;
+  cursor: pointer;
+  transition: background 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cur-item:active { background: var(--bg); }
+.cur-item.selected { background: #f0f7ff; }
+.cur-item-flag { font-size: 24px; line-height: 1; flex-shrink: 0; }
+.cur-item-info { flex: 1; min-width: 0; }
+.cur-item-code { font-size: 15px; font-weight: 700; color: var(--text); }
+.cur-item-name { font-size: 12px; color: var(--text-3); margin-top: 1px; }
+.cur-item-check {
+  color: var(--green); flex-shrink: 0;
+  opacity: 0; transition: opacity 0.15s;
+}
+.cur-item.selected .cur-item-check { opacity: 1; }
 
 .balance-hint {
   font-size: 12px;
@@ -1143,10 +1195,11 @@ input:checked + .switch-track::after { transform: translateX(18px); }
         <div class="amount-display">
           <input class="amount-input-big" id="input-amount" type="text"
             inputmode="decimal" placeholder="0" autocomplete="off">
-          <div class="currency-toggle" id="currency-toggle">
-            <button class="cur-btn active" data-cur="CZK">Kč</button>
-            <button class="cur-btn" data-cur="EUR">€</button>
-          </div>
+          <button class="cur-select-btn" id="cur-select-btn" aria-label="Vybrat měnu">
+            <span class="cur-select-flag" id="cur-flag">🇨🇿</span>
+            <span class="cur-select-code" id="cur-code">CZK</span>
+            <svg class="cur-select-chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
         </div>
         <div class="balance-hint" id="balance-hint">Dostupný zůstatek: <span>38 420 Kč</span></div>
         <div class="fee-hint" id="fee-hint">⚡ Okamžitá platba · zdarma</div>
@@ -1688,25 +1741,17 @@ amountInput.addEventListener('input', () => {
   updateSendButton();
 });
 
-// Currency toggle
-document.querySelectorAll('.cur-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.cur-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    state.currency = btn.dataset.cur;
-    document.getElementById('balance-hint').querySelector('span').textContent =
-      state.currency === 'CZK' ? '38 420 Kč' : '1 540 €';
-    document.getElementById('fee-hint').textContent =
-      state.currency === 'EUR' ? '⚡ SEPA Instant · zdarma' : '⚡ Okamžitá platba · zdarma';
-  });
-});
+// Currency selection is handled by the bottom sheet (CURRENCIES array below)
 
 // Instant toggle
 document.getElementById('instant-toggle').addEventListener('change', (e) => {
   state.instant = e.target.checked;
-  document.getElementById('fee-hint').textContent = state.instant
-    ? (state.currency === 'EUR' ? '⚡ SEPA Instant · zdarma' : '⚡ Okamžitá platba · zdarma')
-    : 'Standardní převod · do 1 pracovního dne';
+  if (state.instant) {
+    const cur = (typeof CURRENCIES !== 'undefined') ? CURRENCIES.find(c => c.code === state.currency) : null;
+    document.getElementById('fee-hint').textContent = cur ? cur.instant : '⚡ Okamžitá platba · zdarma';
+  } else {
+    document.getElementById('fee-hint').textContent = 'Standardní převod · do 1 pracovního dne';
+  }
 });
 
 /* ------------------------------------------------------------------ */
@@ -1812,7 +1857,8 @@ function getInitials(name) {
 }
 
 function populateSummary() {
-  const amount = amountInput.value + (state.currency === 'CZK' ? ' Kč' : ' €');
+  const curData = (typeof CURRENCIES !== 'undefined') ? CURRENCIES.find(c => c.code === state.currency) : null;
+  const amount = amountInput.value + ' ' + (curData ? curData.symbol : state.currency);
   const recipient = getRecipientText();
 
   document.getElementById('sum-name').textContent = recipient;
@@ -1861,7 +1907,8 @@ document.getElementById('btn-summary-back').addEventListener('click', () => {
 });
 
 document.getElementById('btn-summary-confirm').addEventListener('click', () => {
-  const amount = amountInput.value + (state.currency === 'CZK' ? ' Kč' : ' €');
+  const curData = (typeof CURRENCIES !== 'undefined') ? CURRENCIES.find(c => c.code === state.currency) : null;
+  const amount = amountInput.value + ' ' + (curData ? curData.symbol : state.currency);
   document.getElementById('auth-amount').textContent = amount;
   document.getElementById('auth-to').textContent = '→ ' + getRecipientText();
   showScreen('screen-auth');
@@ -1890,7 +1937,8 @@ document.getElementById('btn-summary-confirm').addEventListener('click', () => {
 /*  SUCCESS SCREEN                                                      */
 /* ------------------------------------------------------------------ */
 function goToSuccess() {
-  const amount = amountInput.value + (state.currency === 'CZK' ? ' Kč' : ' €');
+  const curData = (typeof CURRENCIES !== 'undefined') ? CURRENCIES.find(c => c.code === state.currency) : null;
+  const amount = amountInput.value + ' ' + (curData ? curData.symbol : state.currency);
   const recipient = getRecipientText();
 
   document.getElementById('suc-recipient').textContent = recipient || '—';
@@ -1993,6 +2041,98 @@ function trackPage(name) {
 // Initial state pro prohlížečové zpět
 history.replaceState({ screen: 'screen-home' }, 'Domů', '#home');
 trackPage('platba_jednokrokova_home');
+</script>
+
+<!-- CURRENCY BOTTOM SHEET -->
+<div class="cur-sheet-overlay" id="cur-overlay"></div>
+<div class="cur-sheet" id="cur-sheet" role="dialog" aria-label="Výběr měny">
+  <div class="cur-sheet-handle"></div>
+  <div class="cur-sheet-title">Měna platby</div>
+  <div class="cur-sheet-list" id="cur-list"></div>
+</div>
+
+<script>
+const CURRENCIES = [
+  { code: 'CZK', flag: '🇨🇿', name: 'Česká koruna',    balance: '38 420 Kč',   symbol: 'Kč',  instant: '⚡ Okamžitá platba · zdarma' },
+  { code: 'EUR', flag: '🇪🇺', name: 'Euro',             balance: '1 540 €',     symbol: '€',   instant: '⚡ SEPA Instant · zdarma' },
+  { code: 'USD', flag: '🇺🇸', name: 'Americký dolar',   balance: '820 $',       symbol: '$',   instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'GBP', flag: '🇬🇧', name: 'Britská libra',    balance: '310 £',       symbol: '£',   instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'CHF', flag: '🇨🇭', name: 'Švýcarský frank',  balance: '240 CHF',     symbol: 'CHF', instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'PLN', flag: '🇵🇱', name: 'Polský zlotý',     balance: '1 200 PLN',   symbol: 'PLN', instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'HUF', flag: '🇭🇺', name: 'Maďarský forint',  balance: '42 000 HUF',  symbol: 'HUF', instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'NOK', flag: '🇳🇴', name: 'Norská koruna',    balance: '1 800 NOK',   symbol: 'NOK', instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'SEK', flag: '🇸🇪', name: 'Švédská koruna',   balance: '2 100 SEK',   symbol: 'SEK', instant: 'Standardní převod · 1–2 pracovní dny' },
+  { code: 'DKK', flag: '🇩🇰', name: 'Dánská koruna',    balance: '940 DKK',     symbol: 'DKK', instant: 'Standardní převod · 1–2 pracovní dny' },
+];
+
+(function() {
+  const overlay = document.getElementById('cur-overlay');
+  const sheet   = document.getElementById('cur-sheet');
+  const list    = document.getElementById('cur-list');
+  const openBtn = document.getElementById('cur-select-btn');
+  const flagEl  = document.getElementById('cur-flag');
+  const codeEl  = document.getElementById('cur-code');
+
+  function buildList() {
+    list.innerHTML = '';
+    CURRENCIES.forEach(c => {
+      const item = document.createElement('div');
+      item.className = 'cur-item' + (state.currency === c.code ? ' selected' : '');
+      item.innerHTML = `
+        <span class="cur-item-flag">${c.flag}</span>
+        <div class="cur-item-info">
+          <div class="cur-item-code">${c.code} – ${c.symbol}</div>
+          <div class="cur-item-name">${c.name}</div>
+        </div>
+        <svg class="cur-item-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      `;
+      item.addEventListener('click', () => selectCurrency(c));
+      list.appendChild(item);
+    });
+  }
+
+  function openSheet() {
+    buildList();
+    overlay.classList.add('open');
+    sheet.classList.add('open');
+    // scroll to selected
+    const sel = list.querySelector('.selected');
+    if (sel) sel.scrollIntoView({ block: 'nearest' });
+  }
+
+  function closeSheet() {
+    overlay.classList.remove('open');
+    sheet.classList.remove('open');
+  }
+
+  function selectCurrency(c) {
+    state.currency = c.code;
+    localStorage.setItem('novat_currency', c.code);
+    flagEl.textContent = c.flag;
+    codeEl.textContent = c.code;
+    // update balance hint
+    const balEl = document.getElementById('balance-hint');
+    if (balEl) balEl.querySelector('span').textContent = c.balance;
+    // update fee hint
+    const feeEl = document.getElementById('fee-hint');
+    if (feeEl) feeEl.textContent = state.instant ? c.instant : 'Standardní převod · do 1 pracovního dne';
+    closeSheet();
+  }
+
+  openBtn.addEventListener('click', openSheet);
+  overlay.addEventListener('click', closeSheet);
+
+  // Restore from localStorage
+  const saved = localStorage.getItem('novat_currency');
+  if (saved) {
+    const c = CURRENCIES.find(x => x.code === saved);
+    if (c) {
+      state.currency = c.code;
+      flagEl.textContent = c.flag;
+      codeEl.textContent = c.code;
+    }
+  }
+})();
 </script>
 </body>
 </html>
