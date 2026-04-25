@@ -1,5 +1,6 @@
 const fs = require("fs");
 const path = require("path");
+const { execSync } = require("child_process");
 
 // Složky, které přeskočíme
 const IGNORE = new Set(["node_modules", ".git", ".cloudflare"]);
@@ -15,11 +16,21 @@ const sections = fs
     const htmlFiles = fs
       .readdirSync(dir)
       .filter((f) => f.endsWith(".html"))
-      .map((f) => ({
-        name: f.replace(".html", ""),
-        path: `${encodeURIComponent(dir)}/${encodeURIComponent(f)}`,
-        modified: fs.statSync(path.join(dir, f)).mtimeMs,
-      }));
+      .map((f) => {
+        const filePath = `${dir}/${f}`;
+        let modified;
+        try {
+          const ts = execSync(`git log -1 --format="%ct" -- "${filePath}"`, { encoding: "utf8" }).trim();
+          modified = ts ? parseInt(ts, 10) * 1000 : fs.statSync(filePath).mtimeMs;
+        } catch {
+          modified = fs.statSync(filePath).mtimeMs;
+        }
+        return {
+          name: f.replace(".html", ""),
+          path: `${encodeURIComponent(dir)}/${encodeURIComponent(f)}`,
+          modified,
+        };
+      });
     return { section: dir, items: htmlFiles };
   })
   .filter((s) => s.items.length > 0);
