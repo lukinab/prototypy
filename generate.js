@@ -17,7 +17,7 @@ const sections = fs
       .filter((f) => f.endsWith(".html"))
       .map((f) => ({
         name: f.replace(".html", ""),
-        path: `/${encodeURIComponent(dir)}/${encodeURIComponent(f)}`,
+        path: `${encodeURIComponent(dir)}/${encodeURIComponent(f)}`,
       }));
     return { section: dir, items: htmlFiles };
   })
@@ -34,6 +34,7 @@ const sectionsHtml = sections
     ({ section, items }) => `
     <div class="card">
       <div class="section-title">${escapeHtml(section)}</div>
+      <div class="divider"></div>
       ${items
         .map(
           ({ name, path: href }, i) => `
