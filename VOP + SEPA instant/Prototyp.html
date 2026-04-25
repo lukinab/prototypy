@@ -1545,7 +1545,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Obnova obrazovky z URL hash při refresh
   const initialHash = window.location.hash.replace('#', '');
   if (initialHash && document.getElementById(initialHash)) {
-    goTo(initialHash);
+    // Zobrazíme obrazovku přímo bez volání goTo (goTo mění hash → může přidat historii)
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(initialHash).classList.add('active');
+    history.replaceState({ screen: initialHash }, '', '#' + initialHash);
   }
 });
 </script>

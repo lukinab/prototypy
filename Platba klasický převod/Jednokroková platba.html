@@ -2098,8 +2098,10 @@ function trackPage(name) {
   }
 }
 
-// Initial state pro prohlížečové zpět
-history.replaceState({ screen: 'screen-home' }, 'Domů', '#home');
+// Initial state pro prohlížečové zpět — jen pokud není v URL jiná obrazovka
+if (!window.location.hash || window.location.hash === '#home') {
+  history.replaceState({ screen: 'screen-home' }, 'Domů', '#home');
+}
 trackPage('platba_jednokrokova_home');
 </script>
 
