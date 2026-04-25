@@ -156,9 +156,13 @@ const html = `<!DOCTYPE html>
       margin: 0 auto;
     }
 
+    .search-wrap-inner {
+      position: relative;
+    }
+
     .search-input {
       width: 100%;
-      padding: 10px 14px 10px 36px;
+      padding: 10px 36px 10px 36px;
       font-size: 17px;
       font-family: inherit;
       background: #e9e9eb url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238e8e93' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") no-repeat 11px center;
@@ -171,6 +175,29 @@ const html = `<!DOCTYPE html>
 
     .search-input::placeholder {
       color: #8e8e93;
+    }
+
+    .search-clear {
+      display: none;
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      padding: 0;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      color: #8e8e93;
+      font-size: 18px;
+      line-height: 1;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .search-clear:hover {
+      color: #3a3a3c;
     }
 
     .no-results {
@@ -187,7 +214,10 @@ const html = `<!DOCTYPE html>
     <h1>Rozcestník</h1>
   </div>
   <div class="search-wrap">
-    <input class="search-input" id="search" type="search" placeholder="Hledat…" autocomplete="off" />
+    <div class="search-wrap-inner">
+      <input class="search-input" id="search" type="search" placeholder="Hledat…" autocomplete="off" />
+      <button class="search-clear" id="search-clear" aria-label="Smazat hledání">×</button>
+    </div>
   </div>
   <div class="content" id="content">
     ${sectionsHtml}
@@ -198,8 +228,11 @@ const html = `<!DOCTYPE html>
       return str.normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').toLowerCase();
     }
 
-    document.getElementById('search').addEventListener('input', function () {
-      var q = normalize(this.value.trim());
+    var searchEl = document.getElementById('search');
+    var clearBtn = document.getElementById('search-clear');
+
+    function runFilter(value) {
+      var q = normalize(value.trim());
       var cards = document.querySelectorAll('#content .card');
       var anyVisible = false;
 
@@ -212,12 +245,10 @@ const html = `<!DOCTYPE html>
         var anyItemVisible = false;
 
         if (sectionMatch) {
-          // celá sekce viditelná
           items.forEach(function (item) { item.style.display = ''; });
           dividers.forEach(function (d) { d.style.display = ''; });
           anyItemVisible = true;
         } else {
-          // filtruj jednotlivé soubory
           items.forEach(function (item) {
             var name = normalize(item.getAttribute('data-name') || '');
             var visible = q === '' || name.includes(q);
@@ -225,7 +256,6 @@ const html = `<!DOCTYPE html>
             if (visible) anyItemVisible = true;
           });
 
-          // skryj/zobraz oddělovače mezi položkami
           var visibleItems = Array.from(items).filter(function (i) { return i.style.display !== 'none'; });
           dividers.forEach(function (d) { d.style.display = 'none'; });
           visibleItems.forEach(function (item, idx) {
@@ -243,7 +273,20 @@ const html = `<!DOCTYPE html>
       });
 
       document.getElementById('no-results').style.display = (!anyVisible && q !== '') ? 'block' : 'none';
+
+      clearBtn.style.display = value.length > 0 ? 'flex' : 'none';
+    }
+
+    searchEl.addEventListener('input', function () {
+      runFilter(this.value);
     });
+
+    clearBtn.addEventListener('click', function () {
+      searchEl.value = '';
+      searchEl.focus();
+      runFilter('');
+    });
+
   </script>
 </body>
 </html>`;
