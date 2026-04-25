@@ -391,6 +391,16 @@ h1.proto-title {
 }
 .cur-item.selected .cur-item-check { opacity: 1; }
 
+.account-bank-hint {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 3px;
+  min-height: 0;
+  transition: color 0.15s;
+}
+.account-bank-hint.ok  { color: var(--green); }
+.account-bank-hint.err { color: #ff3b30; }
+
 .balance-hint {
   font-size: 12px;
   color: var(--text-3);
@@ -1125,30 +1135,18 @@ input:checked + .switch-track::after { transform: translateX(18px); }
       <!-- Recipient field group -->
       <div class="field-group" id="recipient-group">
 
-        <!-- Account number input -->
+        <!-- Combined account + bank code input -->
         <div class="field-row" id="row-account">
           <div class="field-icon" style="color:#6A6A6A;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
           </div>
           <div class="field-inner">
-            <div class="field-label">Číslo účtu</div>
-            <input class="field-input" id="input-account" type="text" inputmode="text"
-              placeholder="1234567890" autocomplete="off">
+            <div class="field-label">Číslo účtu / kód banky</div>
+            <input class="field-input" id="input-account-full" type="text" inputmode="text"
+              placeholder="1234567890/0100" autocomplete="off">
+            <div class="account-bank-hint" id="account-bank-hint"></div>
           </div>
           <div class="valid-icon" id="valid-account"></div>
-        </div>
-
-        <!-- Bank code -->
-        <div class="field-row" id="row-bank">
-          <div class="field-icon" style="color:#6A6A6A;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 10 12 3 21 10"/><path d="M5 10v9a2 2 0 002 2h10a2 2 0 002-2v-9"/></svg>
-          </div>
-          <div class="field-inner">
-            <div class="field-label">Kód banky</div>
-            <input class="field-input" id="input-bank" type="text" inputmode="numeric"
-              placeholder="0100  — KB" autocomplete="off" maxlength="4">
-          </div>
-          <div class="valid-icon" id="valid-bank"></div>
         </div>
 
         <!-- IBAN input (hidden by default) -->
@@ -1570,7 +1568,6 @@ function setInputType(type) {
 
   // Show/hide rows
   document.getElementById('row-account').style.display = (type === 'account') ? '' : 'none';
-  document.getElementById('row-bank').style.display = (type === 'account') ? '' : 'none';
   document.getElementById('row-iban').style.display = (type === 'iban') ? '' : 'none';
   document.getElementById('row-phone').style.display = (type === 'phone') ? '' : 'none';
 
@@ -1579,7 +1576,6 @@ function setInputType(type) {
   document.getElementById('error-account').classList.remove('show');
   document.getElementById('error-iban').classList.remove('show');
   resetValidIcon('valid-account');
-  resetValidIcon('valid-bank');
   resetValidIcon('valid-iban');
   resetValidIcon('valid-phone');
   updateSendButton();
@@ -1679,38 +1675,70 @@ function hideVop() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  ACCOUNT NUMBER VALIDATION                                           */
+/*  ACCOUNT NUMBER VALIDATION (kombinované pole čísloúčtu/kódbanka)   */
 /* ------------------------------------------------------------------ */
-const accountInput = document.getElementById('input-account');
-const bankInput = document.getElementById('input-bank');
+const accountFullInput = document.getElementById('input-account-full');
 
-accountInput.addEventListener('input', () => {
-  const val = accountInput.value.replace(/\s/g, '');
-  const ok = /^\d{2,10}(-\d{2,10})?$/.test(val) || /^\d{6,16}$/.test(val);
-  if (val.length > 0) {
-    setValidIcon('valid-account', ok && val.length >= 6);
-    document.getElementById('error-account').classList.toggle('show', val.length >= 3 && !ok);
-  } else {
+accountFullInput.addEventListener('input', () => {
+  const raw = accountFullInput.value;
+  const slashIdx = raw.indexOf('/');
+  const hint = document.getElementById('account-bank-hint');
+  const err  = document.getElementById('error-account');
+
+  if (slashIdx === -1) {
+    // Uživatel ještě nezadal '/' — jen číslo účtu
+    const acc = raw.replace(/\s/g, '');
+    state.recipientAccount = acc;
+    state.recipientBank    = '';
     resetValidIcon('valid-account');
-    document.getElementById('error-account').classList.remove('show');
+    hint.textContent = '';
+    hint.className = 'account-bank-hint';
+    err.classList.remove('show');
+    updateSendButton();
+    return;
   }
-  state.recipientAccount = val;
-  updateSendButton();
-});
 
-bankInput.addEventListener('input', () => {
-  const val = bankInput.value.replace(/\s/g, '');
-  const bankName = BANKS[val];
-  if (val.length === 4) {
-    setValidIcon('valid-bank', !!bankName);
-    if (bankName) {
-      bankInput.placeholder = val + '  — ' + bankName;
+  const accPart  = raw.slice(0, slashIdx).replace(/\s/g, '');
+  const bankPart = raw.slice(slashIdx + 1).replace(/\s/g, '').slice(0, 4);
+
+  // Zkrátit vstup na max 4 číslice za lomítkem
+  if (raw.slice(slashIdx + 1).length > 4) {
+    accountFullInput.value = accPart + '/' + bankPart;
+  }
+
+  state.recipientAccount = accPart;
+  state.recipientBank    = bankPart;
+
+  // Validace čísla účtu: volitelné předčíslí-čísloúčtu nebo 6–10 číslic
+  const accOk = /^(\d{1,6}-)?\d{2,10}$/.test(accPart) && accPart.length >= 2;
+
+  // Zobraz název banky
+  const bankName = BANKS[bankPart];
+  if (bankPart.length > 0) {
+    if (bankPart.length < 4) {
+      hint.textContent = '';
+      hint.className = 'account-bank-hint';
+    } else if (bankName) {
+      hint.textContent = bankName;
+      hint.className = 'account-bank-hint ok';
+    } else {
+      hint.textContent = 'Neznámý kód banky';
+      hint.className = 'account-bank-hint err';
     }
   } else {
-    resetValidIcon('valid-bank');
-    bankInput.placeholder = '0100  — KB';
+    hint.textContent = '';
+    hint.className = 'account-bank-hint';
   }
-  state.recipientBank = val;
+
+  const allOk = accOk && bankPart.length === 4 && !!bankName;
+  if (accPart.length >= 2 && bankPart.length === 4) {
+    setValidIcon('valid-account', allOk);
+    err.classList.toggle('show', !allOk);
+  } else {
+    resetValidIcon('valid-account');
+    err.classList.remove('show');
+  }
+
   updateSendButton();
 });
 
@@ -1770,9 +1798,12 @@ document.getElementById('details-toggle').addEventListener('click', () => {
 function isRecipientValid() {
   switch (state.inputType) {
     case 'account': {
-      const acc = document.getElementById('input-account').value.replace(/\s/g, '');
-      const bank = document.getElementById('input-bank').value.replace(/\s/g, '');
-      return acc.length >= 6 && bank.length === 4;
+      const full = document.getElementById('input-account-full').value;
+      const slashIdx = full.indexOf('/');
+      if (slashIdx === -1) return false;
+      const acc  = full.slice(0, slashIdx).replace(/\s/g, '');
+      const bank = full.slice(slashIdx + 1).replace(/\s/g, '');
+      return acc.length >= 2 && bank.length === 4 && !!BANKS[bank];
     }
     case 'iban': {
       const iban = document.getElementById('input-iban').value.replace(/\s/g, '').toUpperCase();
@@ -1830,9 +1861,7 @@ document.getElementById('qa-pay').addEventListener('click', () => {
 function getRecipientText() {
   if (state.recipientName) return state.recipientName;
   if (state.inputType === 'account') {
-    const acc = document.getElementById('input-account').value;
-    const bank = document.getElementById('input-bank').value;
-    return (acc && bank) ? (acc + '/' + bank) : (acc || '—');
+    return document.getElementById('input-account-full').value || '—';
   }
   if (state.inputType === 'iban') return document.getElementById('input-iban').value || '—';
   if (state.inputType === 'phone') return document.getElementById('input-phone').value || '—';
@@ -1841,9 +1870,7 @@ function getRecipientText() {
 
 function getAccountText() {
   if (state.inputType === 'account') {
-    const acc = document.getElementById('input-account').value;
-    const bank = document.getElementById('input-bank').value;
-    return (acc && bank) ? (acc + '/' + bank) : (acc || '—');
+    return document.getElementById('input-account-full').value || '—';
   }
   if (state.inputType === 'iban') return document.getElementById('input-iban').value || '—';
   if (state.inputType === 'phone') return document.getElementById('input-phone').value || '—';
@@ -1988,8 +2015,7 @@ document.getElementById('btn-another').addEventListener('click', () => {
 
 function resetForm() {
   // Clear fields
-  document.getElementById('input-account').value = '';
-  document.getElementById('input-bank').value = '';
+  document.getElementById('input-account-full').value = '';
   document.getElementById('input-iban').value = '';
   document.getElementById('input-phone').value = '';
   document.getElementById('input-amount').value = '';
@@ -2002,7 +2028,7 @@ function resetForm() {
   state.amount = '';
 
   // Reset icons
-  ['valid-account','valid-bank','valid-iban','valid-phone'].forEach(resetValidIcon);
+  ['valid-account','valid-iban','valid-phone'].forEach(resetValidIcon);
   hideVop();
 
   // Reset bio
