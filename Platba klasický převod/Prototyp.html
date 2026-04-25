@@ -344,6 +344,30 @@
   .hint code {
     background: #444; padding: 2px 6px; border-radius: 4px; font-size: 11px;
   }
+
+  /* ====== MOBILE: SKRYTÍ PHONE SHELLU ====== */
+  @media (max-width: 480px) {
+    html, body {
+      background: var(--bg);
+      padding: 0;
+      gap: 0;
+      align-items: stretch;
+      overflow: hidden;
+      min-height: 100dvh;
+    }
+    h1.proto-title,
+    .subtitle,
+    .hint {
+      display: none;
+    }
+    .stage {
+      width: 100vw;
+      height: 100dvh;
+      border-radius: 0;
+      border: none;
+      box-shadow: none;
+    }
+  }
 </style>
 </head>
 <body>
