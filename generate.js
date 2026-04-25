@@ -18,6 +18,7 @@ const sections = fs
       .map((f) => ({
         name: f.replace(".html", ""),
         path: `${encodeURIComponent(dir)}/${encodeURIComponent(f)}`,
+        modified: fs.statSync(path.join(dir, f)).mtimeMs,
       }));
     return { section: dir, items: htmlFiles };
   })
@@ -37,10 +38,11 @@ const sectionsHtml = sections
       <div class="divider"></div>
       ${items
         .map(
-          ({ name, path: href }, i) => `
+          ({ name, path: href, modified }, i) => `
         ${i > 0 ? '<div class="divider file-divider"></div>' : ""}
-        <a class="item" href="${href}" data-name="${escapeHtml(name)}">
+        <a class="item" href="${href}" data-name="${escapeHtml(name)}" data-modified="${modified}">
           <span class="item-name">${escapeHtml(name)}</span>
+          <span class="badge-new" style="display:none">Nová verze</span>
           <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="9 18 15 12 9 6"/>
           </svg>
@@ -207,6 +209,19 @@ const html = `<!DOCTYPE html>
       font-size: 15px;
       padding: 24px 0 8px;
     }
+
+    .badge-new {
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      background: #ff3b30;
+      border-radius: 20px;
+      padding: 2px 8px;
+      margin-left: auto;
+      margin-right: 8px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -285,6 +300,20 @@ const html = `<!DOCTYPE html>
       searchEl.value = '';
       searchEl.focus();
       runFilter('');
+    });
+
+    // Detekce nových verzí
+    document.querySelectorAll('a.item[data-modified]').forEach(function (link) {
+      var href = link.getAttribute('href');
+      var modified = parseInt(link.getAttribute('data-modified'), 10);
+      var key = 'seen__' + href;
+      var seen = parseInt(localStorage.getItem(key) || '0', 10);
+      if (modified > seen) {
+        link.querySelector('.badge-new').style.display = 'inline-block';
+      }
+      link.addEventListener('click', function () {
+        localStorage.setItem(key, Date.now().toString());
+      });
     });
 
   </script>
