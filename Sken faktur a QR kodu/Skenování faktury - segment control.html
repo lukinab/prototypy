@@ -1421,6 +1421,24 @@
     go('screen-dashboard');
   }
 
+  // Trojklik na prázdnou plochu headeru → reset nápovědy
+  (function() {
+    var tapCount = 0, tapTimer = null;
+    document.querySelectorAll('.topbar').forEach(function(bar) {
+      bar.addEventListener('click', function(e) {
+        if (e.target.closest('button')) return;
+        tapCount++;
+        clearTimeout(tapTimer);
+        tapTimer = setTimeout(function() { tapCount = 0; }, 800);
+        if (tapCount >= 3) {
+          tapCount = 0;
+          clearTimeout(tapTimer);
+          resetTooltips();
+        }
+      });
+    });
+  })();
+
   // Kliknutí mimo tooltip → zavřít
   document.getElementById('stage').addEventListener('click', function(e) {
     const tooltip = document.getElementById('ctx-tooltip-qr');
