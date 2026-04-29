@@ -712,6 +712,29 @@
   }
   .ctx-tt-close:active { background: rgba(255,255,255,0.22); }
 
+  /* Toast notifikace */
+  .toast {
+    position: absolute;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%) translateY(12px);
+    background: #1A1A1A;
+    color: #fff;
+    font-size: 14px;
+    padding: 10px 18px;
+    border-radius: 24px;
+    white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.22s ease, transform 0.22s ease;
+    z-index: 200;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
   /* Mobile: skryj okolní prvky a roztáhni prototyp na celou obrazovku */
   @media (max-width: 640px) {
     html, body {
@@ -1153,6 +1176,7 @@
     </div>
   </section>
 
+  <div class="toast" id="toast"></div>
 </div>
 
 <div class="controls">
@@ -1413,12 +1437,21 @@
 
   // (reset fotky je nyní řešen uvnitř _renderScreen)
 
+  function showToast(msg) {
+    var el = document.getElementById('toast');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.add('show');
+    setTimeout(function() { el.classList.remove('show'); }, 2200);
+  }
+
   function resetTooltips() {
     localStorage.removeItem(TOOLTIP_KEY);
     tooltipSeenOnPayment = false;
     hideTooltipImmediate();
     hideScanTooltipImmediate();
     go('screen-dashboard');
+    showToast('Nápověda byla resetována');
   }
 
   // Trojklik na prázdnou plochu headeru → reset nápovědy
