@@ -636,6 +636,61 @@
     line-height: 1.5;
   }
 
+  /* ===== Contextual tooltip ===== */
+  .ctx-tooltip {
+    position: absolute;
+    top: 60px;
+    right: 10px;
+    width: 246px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 14px 12px 14px 14px;
+    box-shadow: 0 6px 28px rgba(0,0,0,0.16);
+    z-index: 100;
+    display: none;
+    opacity: 0;
+    transform: translateY(-10px) scale(0.96);
+    transition: opacity 0.28s cubic-bezier(.22,.8,.46,1), transform 0.28s cubic-bezier(.22,.8,.46,1);
+  }
+  .ctx-tooltip.show { display: flex; flex-direction: row; gap: 10px; align-items: flex-start; }
+  .ctx-tooltip.visible { opacity: 1; transform: translateY(0) scale(1); }
+  .ctx-tooltip::before {
+    content: '';
+    position: absolute;
+    top: -7px;
+    right: 19px;
+    width: 14px; height: 8px;
+    background: #fff;
+    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    filter: drop-shadow(0 -2px 2px rgba(0,0,0,0.07));
+  }
+  .ctx-tt-icon {
+    width: 38px; height: 38px; flex-shrink: 0;
+    border-radius: 50%;
+    background: #F2F2F2;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .ctx-tt-icon svg { width: 20px; height: 20px; color: #1A1A1A; }
+  .ctx-tt-body { flex: 1; min-width: 0; padding-right: 18px; }
+  .ctx-tt-title { font-size: 14px; font-weight: 700; color: #1A1A1A; line-height: 1.3; }
+  .ctx-tt-text { font-size: 13px; color: #6A6A6A; line-height: 1.45; margin-top: 3px; }
+  .ctx-tt-close {
+    position: absolute;
+    top: 10px; right: 10px;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: #EBEBEB;
+    border: none;
+    font-size: 13px;
+    color: #888;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    line-height: 1;
+    padding: 0;
+  }
+  .ctx-tt-close:active { background: #ddd; }
+
   /* Mobile: skryj okolní prvky a roztáhni prototyp na celou obrazovku */
   @media (max-width: 640px) {
     html, body {
@@ -753,12 +808,27 @@
     <div class="topbar white">
       <button class="iconbtn" onclick="go('screen-dashboard')">✕</button>
       <div class="title">Nová platba</div>
-      <button class="iconbtn" onclick="go('screen-scan'); setMode('auto');" title="Skenovat">
+      <button class="iconbtn" id="btn-qr-scan" onclick="go('screen-scan'); setMode('auto');" title="Skenovat">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
           <rect x="3" y="14" width="7" height="7"/><path d="M14 14h7v3M14 18v3h7"/>
         </svg>
       </button>
+    </div>
+
+    <!-- Contextual tooltip for QR/faktura scan -->
+    <div class="ctx-tooltip" id="ctx-tooltip-qr">
+      <div class="ctx-tt-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
+          <path d="M14 2v6h6M9 13h6M9 17h4"/>
+        </svg>
+      </div>
+      <div class="ctx-tt-body">
+        <div class="ctx-tt-title">Nová funkce</div>
+        <div class="ctx-tt-text">Faktury nyní přečteme i bez QR kódu – stačí zaměřit celou fakturu kamerou.</div>
+      </div>
+      <button class="ctx-tt-close" onclick="dismissTooltip()" aria-label="Zavřít">✕</button>
     </div>
     <div class="scroll" style="padding:14px;">
       <div class="field">
@@ -1082,6 +1152,31 @@
 </p>
 
 <script>
+  // ===== Contextual tooltip logic =====
+  const TOOLTIP_KEY = 'tooltip_qr_noqr_dismissed';
+
+  function showTooltip() {
+    if (localStorage.getItem(TOOLTIP_KEY)) return;
+    const el = document.getElementById('ctx-tooltip-qr');
+    if (!el) return;
+    el.classList.add('show');
+    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
+  }
+
+  function dismissTooltip() {
+    const el = document.getElementById('ctx-tooltip-qr');
+    if (!el) return;
+    el.classList.remove('visible');
+    localStorage.setItem(TOOLTIP_KEY, '1');
+    setTimeout(() => el.classList.remove('show'), 280);
+  }
+
+  function hideTooltipImmediate() {
+    const el = document.getElementById('ctx-tooltip-qr');
+    if (!el) return;
+    el.classList.remove('visible', 'show');
+  }
+
   // Vykreslí obrazovku — bez zásahu do historie
   function _renderScreen(id) {
     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
@@ -1095,6 +1190,11 @@
     }
     if (id === 'screen-ocr-verify' && typeof resetPhoto === 'function') {
       resetPhoto();
+    }
+    if (id === 'screen-newpayment') {
+      setTimeout(showTooltip, 400);
+    } else {
+      hideTooltipImmediate();
     }
   }
 
