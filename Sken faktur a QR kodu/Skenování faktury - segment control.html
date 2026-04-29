@@ -1355,6 +1355,14 @@
   })();
 
   // (reset fotky je nyní řešen uvnitř _renderScreen)
+
+  // Kliknutí mimo tooltip → zavřít
+  document.getElementById('stage').addEventListener('click', function(e) {
+    const tooltip = document.getElementById('ctx-tooltip-qr');
+    if (tooltip && tooltip.classList.contains('show') && !tooltip.contains(e.target)) {
+      dismissTooltip();
+    }
+  });
 </script>
 
 </body>
