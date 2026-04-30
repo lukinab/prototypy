@@ -359,7 +359,7 @@ const html = `<!DOCTYPE html>
   </div>
   <script>
     (function () {
-      var PASSWORD = 'kb26';
+      var PASSWORD_HASH = 'ff0cd0c401667097559c52f6f195734f9751e0389c16581a3516eb3fd3a7d878';
       var STORAGE_KEY = 'rozcestnik__auth';
       var gate = document.getElementById('gate');
       var app = document.getElementById('app');
@@ -372,20 +372,27 @@ const html = `<!DOCTYPE html>
         app.style.display = 'block';
       }
 
+      function deny() {
+        input.classList.add('error');
+        errorEl.classList.add('show');
+        input.select();
+      }
+
       if (localStorage.getItem(STORAGE_KEY) === '1') {
         unlock();
       }
 
       form.addEventListener('submit', function (e) {
         e.preventDefault();
-        if (input.value === PASSWORD) {
-          localStorage.setItem(STORAGE_KEY, '1');
-          unlock();
-        } else {
-          input.classList.add('error');
-          errorEl.classList.add('show');
-          input.select();
-        }
+        crypto.subtle.digest('SHA-256', new TextEncoder().encode(input.value)).then(function (buf) {
+          var hex = Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+          if (hex === PASSWORD_HASH) {
+            localStorage.setItem(STORAGE_KEY, '1');
+            unlock();
+          } else {
+            deny();
+          }
+        }).catch(deny);
       });
 
       input.addEventListener('input', function () {
