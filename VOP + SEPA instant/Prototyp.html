@@ -89,6 +89,20 @@
 
   /* ── Animations ── */
   @keyframes slideUpSheet { from { transform: translateY(100%) } to { transform: translateY(0) } }
+  @keyframes spinRect { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+  #verify-loader {
+    display: none;
+    position: absolute; inset: 0; z-index: 300;
+    background: rgba(180,180,180,0.72);
+    align-items: center; justify-content: center;
+  }
+  #verify-loader.active { display: flex; }
+  .verify-loader-shape {
+    width: 44px; height: 34px;
+    border: 3.5px solid var(--kb-red);
+    border-radius: 11px;
+    animation: spinRect 0.9s linear infinite;
+  }
   .currency-item {
     display: flex; align-items: center; gap: 14px;
     padding: 16px 20px; cursor: pointer;
@@ -1071,6 +1085,11 @@
     </div>
   </div>
 
+  <!-- ══ Verify loader overlay ══ -->
+  <div id="verify-loader">
+    <div class="verify-loader-shape"></div>
+  </div>
+
 </div><!-- /app-shell -->
 
 <script>
@@ -1453,6 +1472,7 @@ function checkRecipient() {
   if (!unverifiableUsed && Math.random() < 0.3) {
     unverifiableUsed = true;
     setTimeout(() => {
+      document.getElementById('verify-loader').classList.remove('active');
       setNameState('unverifiable');
       if (pendingContinue) { pendingContinue = false; goToS08(); }
     }, 1000);
@@ -1464,6 +1484,7 @@ function checkRecipient() {
   const dist = levenshtein(input, correct);
 
   setTimeout(() => {
+    document.getElementById('verify-loader').classList.remove('active');
     if (dist === 0) {
       setNameState('match');
     } else if (dist <= 3) {
@@ -1533,6 +1554,7 @@ function goToS08() {
   }
   if (currentNameState === 'empty' || currentNameState === 'pending') {
     pendingContinue = true;
+    document.getElementById('verify-loader').classList.add('active');
     checkRecipient();
     return;
   }
