@@ -519,12 +519,7 @@
       </div>
 
       <div class="field">
-        <div class="komu-label-row">
-          <div class="field-label">Komu</div>
-          <button class="komu-info-btn" id="komu-info-btn" aria-label="Nápověda k poli Komu" onclick="toggleKomuTooltip()">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><circle cx="12" cy="8" r="0.5" fill="currentColor"/></svg>
-          </button>
-        </div>
+        <div class="field-label">Komu</div>
         <input id="recipient" type="text" placeholder="Číslo účtu, IBAN, šablona nebo příjemce" autocomplete="off">
       </div>
 
@@ -769,17 +764,11 @@ function hideKomuTooltipImmediate() {
   el.classList.remove('visible', 'show');
 }
 
-function toggleKomuTooltip() {
+document.addEventListener('click', (e) => {
   const el = document.getElementById('ctx-tooltip-komu');
-  if (!el) return;
-  if (el.classList.contains('show')) {
-    el.classList.remove('visible');
-    setTimeout(() => el.classList.remove('show'), 280);
-  } else {
-    el.classList.add('show');
-    requestAnimationFrame(() => requestAnimationFrame(() => el.classList.add('visible')));
-  }
-}
+  if (!el || !el.classList.contains('show')) return;
+  if (!el.contains(e.target)) dismissKomuTooltip();
+});
 
 /* ============================================================
    ANALYTICS - GA4 + CLARITY
