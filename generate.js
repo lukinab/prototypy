@@ -319,7 +319,7 @@ const html = `<!DOCTYPE html>
       font-size: 17px;
       font-weight: 600;
       font-family: inherit;
-      background: #007aff;
+      background: #E3000F;
       color: #fff;
       border: none;
       border-radius: 10px;
@@ -328,7 +328,7 @@ const html = `<!DOCTYPE html>
     }
 
     .gate-btn:active {
-      background: #0062cc;
+      background: #B8000C;
     }
   </style>
 </head>
@@ -359,7 +359,7 @@ const html = `<!DOCTYPE html>
   </div>
   <script>
     (function () {
-      var PASSWORD = 'KB2026';
+      var PASSWORD = 'kb26';
       var STORAGE_KEY = 'rozcestnik__auth';
       var gate = document.getElementById('gate');
       var app = document.getElementById('app');
@@ -369,7 +369,7 @@ const html = `<!DOCTYPE html>
 
       function unlock() {
         gate.style.display = 'none';
-        app.style.display = '';
+        app.style.display = 'block';
       }
 
       if (localStorage.getItem(STORAGE_KEY) === '1') {
