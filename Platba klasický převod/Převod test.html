@@ -740,10 +740,7 @@ const PAGE_TITLES = {
 /* ============================================================
    KONTEXTOVÁ NÁPOVĚDA – pole Komu
    ============================================================ */
-const KOMU_TOOLTIP_KEY = 'tooltip_komu_dismissed';
-
 function showKomuTooltip() {
-  if (localStorage.getItem(KOMU_TOOLTIP_KEY)) return;
   const el = document.getElementById('ctx-tooltip-komu');
   if (!el) return;
   el.classList.add('show');
@@ -754,7 +751,6 @@ function dismissKomuTooltip() {
   const el = document.getElementById('ctx-tooltip-komu');
   if (!el) return;
   el.classList.remove('visible');
-  localStorage.setItem(KOMU_TOOLTIP_KEY, '1');
   setTimeout(() => el.classList.remove('show'), 280);
 }
 
